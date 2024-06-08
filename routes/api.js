@@ -1,6 +1,8 @@
 'use strict';
 require('dotenv').config();
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+const SaltRounds = 12;
 
 // connect to DB
 mongoose.connect(process.env.DB, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false });
