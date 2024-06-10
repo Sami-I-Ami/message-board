@@ -239,5 +239,29 @@ module.exports = function (app) {
 
       // send response
       res.send(response_thread);
+    })
+
+    .delete(async (req, res) => {
+      // get data
+      const board = req.params.board;
+      const {thread_id, reply_id, delete_password} = req.body;
+
+      // find reply
+      const current_board = await Board.findOne({name: board});
+      const current_thread_index = current_board.threads.findIndex((thread) => thread._id == thread_id);
+      const current_reply_index = current_board.threads[current_thread_index].replies.findIndex((reply) => reply._id == reply_id);
+
+      // check password
+      const password_check = await bcrypt.compare(delete_password, current_board.threads[current_thread_index].replies[current_reply_index].delete_password);
+      if (!password_check) {
+        return res.send("incorrect password");
+      }
+
+      // delete reply text
+      current_board.threads[current_thread_index].replies[current_reply_index].text = '[deleted]';
+      await current_board.save();
+
+      // send response
+      return res.send('success');
     });
 };
