@@ -200,7 +200,7 @@ module.exports = function (app) {
       await current_board.save();
 
       // output
-      res.json(new_reply);
+      res.json(current_board.threads[current_thread_index]);
     })
 
     .get(async (req, res) => {
@@ -213,9 +213,12 @@ module.exports = function (app) {
       const current_thread = current_board.threads.find((thread) => thread._id == thread_id);
       const replies = current_thread.replies;
 
+      // sort replies
+      replies.sort((a, b) => b.created_on - a.created_on);
+
       // remove irrelevant info from every reply
       let response_replies = []
-      for (let reply in replies) {
+      for (let reply of replies) {
         const current_reply = {
           _id: reply.id,
           text: reply.text,
