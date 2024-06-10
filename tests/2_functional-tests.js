@@ -110,8 +110,83 @@ suite('Functional Tests', function() {
           });
     });
 
-    // DELETE Tests
+    // PUT Tests
+    test('Test PUT thread', function(done){
+        chai.request(server)
+          .put(`/api/threads/${board}`)
+          .send({
+            thread_id: thread_id_to_delete
+          })
+          .end(function(err, res){
+            assert.equal(res.status, 200);
+            assert.equal(res.type, 'text/html');
+            assert.equal(res.text, "reported");
+            done();
+          });
+    });
 
+    test('Test PUT reply', function(done){
+        chai.request(server)
+          .put(`/api/replies/${board}`)
+          .send({
+            thread_id: thread_id_to_delete,
+            reply_id: reply_id_to_delete
+          })
+          .end(function(err, res){
+            assert.equal(res.status, 200);
+            assert.equal(res.type, 'text/html');
+            assert.equal(res.text, "reported");
+            done();
+          });
+    });
+
+    // DELETE Tests
+    test('Test DELETE reply with invalid password', function(done){
+        chai.request(server)
+          .delete(`/api/replies/${board}`)
+          .send({
+            thread_id: thread_id_to_delete,
+            reply_id: reply_id_to_delete,
+            delete_password: wrong_password
+          })
+          .end(async function(err, res){
+            assert.equal(res.status, 200);
+            assert.equal(res.type, 'text/html');
+            assert.equal(res.text, "incorrect password");
+            done();
+          });
+    });
+
+    test('Test DELETE reply with valid password', function(done){
+        chai.request(server)
+          .delete(`/api/replies/${board}`)
+          .send({
+            thread_id: thread_id_to_delete,
+            reply_id: reply_id_to_delete,
+            delete_password
+          })
+          .end(async function(err, res){
+            assert.equal(res.status, 200);
+            assert.equal(res.type, 'text/html');
+            assert.equal(res.text, "success");
+            done();
+          });
+    });
+
+    test('Test DELETE thread with invalid password', function(done){
+        chai.request(server)
+          .delete(`/api/threads/${board}`)
+          .send({
+            thread_id: thread_id_to_delete,
+            delete_password: wrong_password
+          })
+          .end(async function(err, res){
+            assert.equal(res.status, 200);
+            assert.equal(res.type, 'text/html');
+            assert.equal(res.text, "incorrect password");
+            done();
+          });
+    });
 
     test('Test DELETE thread with valid password', function(done){
         chai.request(server)
@@ -120,7 +195,7 @@ suite('Functional Tests', function() {
             thread_id: thread_id_to_delete,
             delete_password
           })
-          .end(function(err, res){
+          .end(async function(err, res){
             assert.equal(res.status, 200);
             assert.equal(res.type, 'text/html');
             assert.equal(res.text, "success");
