@@ -2,6 +2,7 @@ const chaiHttp = require('chai-http');
 const chai = require('chai');
 const assert = chai.assert;
 const server = require('../server');
+const assertionAnalyser = require('../assertion-analyser');
 
 const board = 'functional-tests';
 const test_thread_id = '666701d0ed98d605b4dbe1b0';
@@ -57,6 +58,54 @@ suite('Functional Tests', function() {
             assert.exists(res.body.replies[0].delete_password);
             assert.equal(res.body.replies[0].reported, false);
             reply_id_to_delete = res.body.replies[0]._id;
+            done();
+          });
+    });
+
+    // GET Tests
+    test('New thread GET test', function(done) {
+        chai.request(server)
+          .get(`/api/threads/${board}`)
+          .end(function(err, res){
+            assert.equal(res.status, 200);
+            assert.equal(res.type, 'application/json');
+            assert.isArray(res.body);
+            assert.isAtMost(res.body.length, 10);
+            assert.notProperty(res.body[0], 'reported');
+            assert.notProperty(res.body[0], 'delete_password');
+            assert.equal(res.body[0]._id, thread_id_to_delete);
+            assert.equal(res.body[0].text, thread_text);
+            assert.equal(new Date(res.body[0].created_on).toDateString(), date.toDateString());
+            assert.equal(new Date(res.body[0].bumped_on).toDateString(), date.toDateString());
+            assert.isAtMost(res.body[1].replies.length, 3);
+            assert.notProperty(res.body[0].replies[0], 'delete_password');
+            assert.notProperty(res.body[0].replies[0], 'reported');
+            assert.equal(res.body[0].replies[0]._id, reply_id_to_delete);
+            assert.equal(res.body[0].replies[0].text, reply_text);
+            assert.equal(new Date(res.body[0].replies[0].created_on).toDateString(), date.toDateString());
+            done();
+          });
+    });
+
+    test('New reply GET test', function(done) {
+        chai.request(server)
+          .get(`/api/replies/${board}?thread_id=${test_thread_id}`)
+          .end(function(err, res){
+            assert.equal(res.status, 200);
+            assert.equal(res.type, 'application/json');
+            assert.isObject(res.body);
+            assert.notProperty(res.body, 'reported');
+            assert.notProperty(res.body, 'delete_password');
+            assert.equal(res.body._id, test_thread_id);
+            assert.equal(res.body.text, '15');
+            assert.equal(new Date(res.body.created_on).toDateString(), date.toDateString());
+            assert.equal(new Date(res.body.bumped_on).toDateString(), date.toDateString());
+            assert.equal(res.body.replies.length, 5);
+            assert.notProperty(res.body.replies[0], 'delete_password');
+            assert.notProperty(res.body.replies[0], 'reported');
+            assert.equal(res.body.replies[0]._id, test_reply_id);
+            assert.equal(res.body.replies[0].text, '5');
+            assert.equal(new Date(res.body.replies[0].created_on).toDateString(), date.toDateString());
             done();
           });
     });
