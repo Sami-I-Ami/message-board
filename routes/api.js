@@ -99,13 +99,27 @@ module.exports = function (app) {
         replies.sort((a, b) => b.created_on - a.created_on);
         const recent_replies = replies.slice(0, 2);
 
+        // go through each
+        let response_replies = [];
+        for (let reply of recent_replies) {
+          // get only relevant reply info
+          const current_reply = {
+            _id: reply.id,
+            text: reply.text,
+            created_on: reply.created_on
+          }
+
+          // push to replies list
+          response_replies.push(current_reply);
+        }
+
         // get only relevant thread info
         const current_thread = {
           _id: thread._id,
           text: thread.text,
           created_on: thread.created_on,
           bumped_on: thread.bumped_on,
-          replies: recent_replies
+          replies: response_replies
         }
 
         // push to response list
@@ -187,5 +201,40 @@ module.exports = function (app) {
 
       // output
       res.json(new_reply);
+    })
+
+    .get(async (req, res) => {
+      // get data
+      const board = req.params.board;
+      const thread_id = req.query.thread_id;
+
+      // find thread and replies
+      const current_board = await Board.findOne({name: board});
+      const current_thread = current_board.threads.find((thread) => thread._id == thread_id);
+      const replies = current_thread.replies;
+
+      // remove irrelevant info from every reply
+      let response_replies = []
+      for (let reply in replies) {
+        const current_reply = {
+          _id: reply.id,
+          text: reply.text,
+          created_on: reply.created_on
+        }
+
+        response_replies.push(current_reply);
+      }
+
+      // get only relevant thread info
+      const response_thread = {
+        _id: current_thread._id,
+        text: current_thread.text,
+        created_on: current_thread.created_on,
+        bumped_on: current_thread.bumped_on,
+        replies: response_replies
+      }
+
+      // send response
+      res.send(response_thread);
     });
 };
