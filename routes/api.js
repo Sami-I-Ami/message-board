@@ -135,6 +135,21 @@ module.exports = function (app) {
       current_board.threads.splice(index_to_delete, 1);
       await current_board.save();
       return res.send("success");
+    })
+
+    .put(async (req, res) => {
+      // get data
+      let board = req.params.board;
+      let thread_id = req.body.thread_id;
+
+      // find thread
+      const current_board = await Board.findOne({name: board});
+      const current_thread_index = current_board.threads.findIndex((thread) => thread._id == thread_id);
+
+      // report thread
+      current_board.threads[current_thread_index].reported = true;
+      await current_board.save();
+      res.send("reported");
     });
 
   app.route('/api/replies/:board');
