@@ -263,5 +263,23 @@ module.exports = function (app) {
 
       // send response
       return res.send('success');
+    })
+
+    .put(async (req, res) => {
+      // get data
+      const board = req.params.board;
+      const {thread_id, reply_id} = req.body;
+
+      // find reply
+      const current_board = await Board.findOne({name: board});
+      const current_thread_index = current_board.threads.findIndex((thread) => thread._id == thread_id);
+      const current_reply_index = current_board.threads[current_thread_index].replies.findIndex((reply) => reply._id == reply_id);
+
+      // report reply
+      current_board.threads[current_thread_index].replies[current_reply_index].reported = true;
+      await current_board.save();
+
+      // send response
+      res.send("reported");
     });
 };
