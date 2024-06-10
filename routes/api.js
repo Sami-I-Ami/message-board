@@ -2,6 +2,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const { text } = require('body-parser');
 const SaltRounds = 12;
 
 // connect to DB
@@ -42,12 +43,12 @@ module.exports = function (app) {
   app.route('/api/threads/:board')
     .post(async (req, res) => {
       // get data
-      let board = req.params.board;
-      let {text, delete_password} = req.body;
+      const board = req.params.board;
+      const {text, delete_password} = req.body;
       const date = new Date();
 
       // hash password
-      delete_password = await bcrypt.hash(delete_password, SaltRounds);
+      const hashed_password = await bcrypt.hash(delete_password, SaltRounds);
       
       // find/create board
       let current_board = await Board.findOne({name: board});
@@ -64,7 +65,7 @@ module.exports = function (app) {
         created_on: date,
         bumped_on: date,
         reported: false,
-        delete_password,
+        delete_password: hashed_password,
         replies: []
       });
 
@@ -78,7 +79,7 @@ module.exports = function (app) {
 
     .get(async (req, res) => {
       // get data
-      let board = req.params.board;
+      const board = req.params.board;
 
       // find threads
       const current_board = await Board.findOne({name: board});
@@ -117,30 +118,31 @@ module.exports = function (app) {
 
     .delete(async (req, res) => {
       // get data
-      let board = req.params.board;
-      let {thread_id, delete_password} = req.body;
+      const board = req.params.board;
+      const {thread_id, delete_password} = req.body;
 
       // find thread
       const current_board = await Board.findOne({name: board});
-      const current_thread = current_board.threads.find((thread) => thread._id == thread_id);
+      const current_thread_index = current_board.threads.findIndex((thread) => thread._id == thread_id);
 
       // check password
-      const password_check = await bcrypt.compare(delete_password, current_thread.delete_password);
+      const password_check = await bcrypt.compare(delete_password, current_board.threads[current_thread_index].delete_password);
       if (!password_check) {
         return res.send("incorrect password");
       }
 
       // delete thread
-      const index_to_delete = current_board.threads.findIndex((thread) => thread._id == thread_id);
-      current_board.threads.splice(index_to_delete, 1);
+      current_board.threads.splice(current_thread_index, 1);
       await current_board.save();
+
+      // send response
       return res.send("success");
     })
 
     .put(async (req, res) => {
       // get data
-      let board = req.params.board;
-      let thread_id = req.body.thread_id;
+      const board = req.params.board;
+      const thread_id = req.body.thread_id;
 
       // find thread
       const current_board = await Board.findOne({name: board});
@@ -149,9 +151,41 @@ module.exports = function (app) {
       // report thread
       current_board.threads[current_thread_index].reported = true;
       await current_board.save();
+
+      // send response
       res.send("reported");
     });
 
-  app.route('/api/replies/:board');
-  
+  app.route('/api/replies/:board')
+    .post(async (req, res) => {
+      // get data
+      const board = req.params.board;
+      const {text, delete_password, thread_id} = req.body;
+      const date = new Date();
+
+      // hash password
+      const hashed_password = await bcrypt.hash(delete_password, SaltRounds);
+      
+      // find thread
+      const current_board = await Board.findOne({name: board});
+      const current_thread_index = current_board.threads.findIndex((thread) => thread._id == thread_id);
+
+      // update bumped_on date
+      current_board.threads[current_thread_index].bumped_on = date;
+
+      // create new reply
+      const new_reply = new Reply({
+        text,
+        created_on: date,
+        delete_password: hashed_password,
+        reported: false
+      });
+
+      // push to replies and save
+      current_board.threads[current_thread_index].replies.push(new_reply);
+      await current_board.save();
+
+      // output
+      res.json(new_reply);
+    });
 };
