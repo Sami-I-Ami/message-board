@@ -1,5 +1,5 @@
 {
-	"name": "boilerplate-project-messagebaord",
+	"name": "boilerplate-project-messageboard",
 	"version": "0.0.1",
 	"description": "InfoSec project for freeCodeCamp",
 	"main": "server.js",
